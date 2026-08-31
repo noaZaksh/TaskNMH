@@ -1,0 +1,15 @@
+/workspaces/TaskNMH/bin/Debug/net10.0/TaskNMH
+/workspaces/TaskNMH/bin/Debug/net10.0/TaskNMH.deps.json
+/workspaces/TaskNMH/bin/Debug/net10.0/TaskNMH.runtimeconfig.json
+/workspaces/TaskNMH/bin/Debug/net10.0/TaskNMH.dll
+/workspaces/TaskNMH/bin/Debug/net10.0/TaskNMH.pdb
+/workspaces/TaskNMH/obj/Debug/net10.0/TaskNMH.GeneratedMSBuildEditorConfig.editorconfig
+/workspaces/TaskNMH/obj/Debug/net10.0/TaskNMH.AssemblyInfoInputs.cache
+/workspaces/TaskNMH/obj/Debug/net10.0/TaskNMH.AssemblyInfo.cs
+/workspaces/TaskNMH/obj/Debug/net10.0/TaskNMH.csproj.CoreCompileInputs.cache
+/workspaces/TaskNMH/obj/Debug/net10.0/TaskNMH.sourcelink.json
+/workspaces/TaskNMH/obj/Debug/net10.0/TaskNMH.dll
+/workspaces/TaskNMH/obj/Debug/net10.0/refint/TaskNMH.dll
+/workspaces/TaskNMH/obj/Debug/net10.0/TaskNMH.pdb
+/workspaces/TaskNMH/obj/Debug/net10.0/TaskNMH.genruntimeconfig.cache
+/workspaces/TaskNMH/obj/Debug/net10.0/ref/TaskNMH.dll
