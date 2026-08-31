@@ -13,11 +13,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/workspaces/TaskNMH/TaskNMH.csproj",
+      "projectUniqueName": "/workspaces/TaskNMH/Backend/TaskNMH.csproj",
       "projectName": "TaskNMH",
-      "projectPath": "/workspaces/TaskNMH/TaskNMH.csproj",
+      "projectPath": "/workspaces/TaskNMH/Backend/TaskNMH.csproj",
       "packagesPath": "/home/codespace/.nuget/packages/",
-      "outputPath": "/workspaces/TaskNMH/obj/",
+      "outputPath": "/workspaces/TaskNMH/Backend/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "/home/codespace/.nuget/NuGet/NuGet.Config"
