@@ -1,3 +1,5 @@
+using Backend.Services;
+using Backend.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers;
@@ -6,12 +8,17 @@ namespace Backend.Controllers;
 [Route("api/[controller]")]
 public class LandingController : ControllerBase
 {
-    [HttpGet]
-    public IActionResult Get()
+    private readonly Service _Service;
+
+    public LandingController(Service Service)
     {
-        return Ok(new
-        {
-            message = "Hello from Landing Controller"
-        });
+        _Service = Service;
     }
+
+    [HttpPost]
+    [Route("GetLandingData")]
+     public IActionResult GetLandingData([FromBody] LandingModel model)
+     {
+         return Ok(_Service.GetLandingData(model));
+     }
 }

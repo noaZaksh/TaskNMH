@@ -1,3 +1,5 @@
+using Backend.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Controllers
@@ -17,6 +19,9 @@ builder.Services.AddCors(options =>
             .AllowAnyMethod();
     });
 });
+
+// Services - Dependency Injection
+builder.Services.AddScoped<Service>();
 
 var app = builder.Build();
 
