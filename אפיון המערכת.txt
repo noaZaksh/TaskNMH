@@ -1,0 +1,513 @@
+1. אפיון המערכת
+
+המערכת מיועדת לניהול שיטות פרמיה ומדדים (Metrics), כאשר לכל שיטת פרמיה ניתן להגדיר מספר מדדים. המדדים יכולים לקבל נתונים ממקורות שונים, כאשר במסגרת המימוש הנוכחי נתמקד בקליטת נתונים מקבצי Excel.
+
+המערכת תאפשר:
+
+ניהול שיטות פרמיה הכוללות מספר שיטה, תיאור, אחוז פרמיה ותקופת חישוב.
+ניהול מדדים הכוללים שם, תיאור, סוג מקור, שם מקור ותדירות.
+הגדרת שדות רלוונטיים לכל מדד, כולל סוג נתון, שדה חובה וסדר תצוגה.
+קליטת קבצי Excel בעלי מבנה דינמי, ללא צורך בשינוי מבנה בסיס הנתונים כאשר מתווספים שדות או מדדים חדשים.
+שמירת היסטוריית ייבואים, כולל שם הקובץ, תאריך הקליטה, תקופה, מספר רשומות וסטטוס.
+שמירת גרסאות של מבנה קובץ ה־Excel, כך שגם כאשר מבנה הקובץ משתנה, ניתן לשמור ולשחזר את הנתונים ההיסטוריים בהתאם למבנה שבו נקלטו.
+הצגת נתוני המדד באופן דינמי בהתאם לשדות שהוגדרו עבורו.
+תמיכה בסינון, מיון ו־Pagination בצד השרת לצורך התמודדות עם כמויות נתונים גדולות.
+
+2. ארכיטקטורה:
+                    ┌──────────────────────┐
+                    │       Angular        │
+                    │      Frontend        │
+                    │                      │
+                    │ Metric Data Screen   │
+                    │ Dynamic Table        │
+                    │ Dynamic Filters      │
+                    └──────────┬───────────┘
+                               │ HTTP
+                               ▼
+                    ┌──────────────────────┐
+                    │    ASP.NET Core      │
+                    │       Web API        │
+                    ├──────────────────────┤
+                    │ Controllers           │
+                    │                      │
+                    │ MetricController     │
+                    │ ImportController     │
+                    │ DataController       │
+                    └──────────┬───────────┘
+                               │
+                               ▼
+                    ┌──────────────────────┐
+                    │      Services        │
+                    ├──────────────────────┤
+                    │ MetricService        │
+                    │ ImportService        │
+                    │ Data/Schema Service  │
+                    └──────────┬───────────┘
+                               │
+                               ▼
+                    ┌──────────────────────┐
+                    │     Repository       │
+                    ├──────────────────────┤
+                    │ GenericRepository<T> │
+                    └──────────┬───────────┘
+                               │
+                               ▼
+                    ┌──────────────────────┐
+                    │    Entity Framework  │
+                    │        Core          │
+                    └──────────┬───────────┘
+                               │
+                               ▼
+                    ┌──────────────────────┐
+                    │       SQLite         │
+                    ├──────────────────────┤
+                    │ PremiumMethod        │
+                    │ Metric               │
+                    │ MetricField          │
+                    │ Import               │
+                    │ ImportSchema         │
+                    │ ImportRow            │
+                    │ ImportValue          │
+                    └──────────────────────┘
+
+3.
+DATABASE:
+┌─────────────────────┐
+│    PremiumMethod    │
+├─────────────────────┤
+│ PK Id               │
+│ MethodNumber        │
+│ Description         │
+│ PremiumPercent      │
+│ CalculationPeriod   │
+└──────────┬──────────┘
+           │ 1
+           │
+           │ N
+┌──────────▼──────────┐
+│       Metric        │
+├─────────────────────┤
+│ PK Id               │
+│ FK PremiumMethodId  │
+│ Name                │
+│ Description         │
+│ SourceType          │
+│ SourceName          │
+│ Frequency           │
+└──────┬─────────┬────┘
+       │         │
+      1│        1│
+       │         │
+      N│        N│
+┌──────▼─────┐  ┌▼────────────────┐
+│ MetricField│  │     Import      │
+├────────────┤  ├─────────────────┤
+│ PK Id      │  │ PK Id           │
+│ FK MetricId│  │ FK MetricId     │
+│ Name       │  │ Year            │
+│ DataType   │  │ Period          │
+│ IsRelevant │  │ FileName        │
+│ IsRequired │  │ ImportedAt      │
+│ DisplayOrder│ │ Status          │
+└─────┬──────┘  │ RowsCount       │
+      │         └────────┬────────┘
+      │                  │ 1
+      │                  │
+      │                  │ N
+      │         ┌────────▼────────┐
+      │         │    ImportRow     │
+      │         ├──────────────────┤
+      │         │ PK Id            │
+      │         │ FK ImportId      │
+      │         │ RowNumber        │
+      │         └────────┬─────────┘
+      │                  │ 1
+      │                  │
+      │                  │ N
+      │         ┌────────▼────────┐
+      └────────►│   ImportValue    │
+                ├──────────────────┤
+                │ PK Id            │
+                │ FK ImportRowId   │
+                │ FK MetricFieldId │
+                │ Value            │
+                └──────────────────┘
+
+
+┌─────────────────────┐
+│    ImportSchema     │
+├─────────────────────┤
+│ PK Id               │
+│ FK MetricId         │
+│ Version             │
+│ CreatedAt           │
+└──────────┬──────────┘
+           │ 1
+           │
+           │ N
+┌──────────▼──────────┐
+│  ImportSchemaField  │
+├─────────────────────┤
+│ PK Id               │
+│ FK ImportSchemaId   │
+│ FK MetricFieldId    │
+│ ExcelColumnName     │
+│ ExcelColumnIndex    │
+└─────────────────────┘
+
+Stored Procedures4:
+1. שליפת כל שיטות הפרמיה
+CREATE PROCEDURE pr_GetPremiumMethods
+AS
+BEGIN
+    SELECT
+        Id,
+        MethodNumber,
+        Description,
+        PremiumPercent,
+        CalculationPeriod
+    FROM PremiumMethod
+    ORDER BY MethodNumber;
+END
+2. יצירת שיטת פרמיה
+CREATE PROCEDURE pr_CreatePremiumMethod
+    @MethodNumber NVARCHAR(50),
+    @Description NVARCHAR(500),
+    @PremiumPercent DECIMAL(10,2),
+    @CalculationPeriod NVARCHAR(50)
+AS
+BEGIN
+    INSERT INTO PremiumMethod
+    (
+        MethodNumber,
+        Description,
+        PremiumPercent,
+        CalculationPeriod
+    )
+    VALUES
+    (
+        @MethodNumber,
+        @Description,
+        @PremiumPercent,
+        @CalculationPeriod
+    );
+
+    SELECT SCOPE_IDENTITY() AS Id;
+END
+3. שליפת כל המדדים
+CREATE PROCEDURE pr_GetMetrics
+AS
+BEGIN
+    SELECT
+        Id,
+        PremiumMethodId,
+        Name,
+        Description,
+        SourceType,
+        SourceName,
+        Frequency
+    FROM Metric
+    ORDER BY Name;
+END
+4. שליפת מדדים לפי שיטת פרמיה
+CREATE PROCEDURE pr_GetMetricsByPremiumMethod
+    @PremiumMethodId INT
+AS
+BEGIN
+    SELECT
+        Id,
+        PremiumMethodId,
+        Name,
+        Description,
+        SourceType,
+        SourceName,
+        Frequency
+    FROM Metric
+    WHERE PremiumMethodId = @PremiumMethodId
+    ORDER BY Name;
+END
+5. שליפת שדות המדד
+CREATE PROCEDURE pr_GetMetricFields
+    @MetricId INT
+AS
+BEGIN
+    SELECT
+        Id,
+        MetricId,
+        Name,
+        DataType,
+        IsRelevant,
+        IsRequired,
+        DisplayOrder
+    FROM MetricField
+    WHERE MetricId = @MetricId
+      AND IsRelevant = 1
+    ORDER BY DisplayOrder;
+END
+6. יצירת ייבוא חדש
+CREATE PROCEDURE pr_CreateImport
+    @MetricId INT,
+    @Year INT,
+    @Period NVARCHAR(50),
+    @FileName NVARCHAR(255)
+AS
+BEGIN
+    INSERT INTO Import
+    (
+        MetricId,
+        Year,
+        Period,
+        FileName,
+        ImportedAt,
+        Status,
+        RowsCount
+    )
+    VALUES
+    (
+        @MetricId,
+        @Year,
+        @Period,
+        @FileName,
+        GETDATE(),
+        'Completed',
+        0
+    );
+
+    SELECT SCOPE_IDENTITY() AS Id;
+END
+7. היסטוריית ייבואים
+CREATE PROCEDURE pr_GetImportHistory
+    @MetricId INT
+AS
+BEGIN
+    SELECT
+        Id,
+        MetricId,
+        Year,
+        Period,
+        FileName,
+        ImportedAt,
+        Status,
+        RowsCount
+    FROM Import
+    WHERE MetricId = @MetricId
+    ORDER BY ImportedAt DESC;
+END
+8. שליפת ה־Schema האחרון
+CREATE PROCEDURE pr_GetLatestMetricSchema
+    @MetricId INT
+AS
+BEGIN
+    SELECT
+        s.Id AS SchemaId,
+        s.Version,
+        sf.MetricFieldId,
+        sf.ExcelColumnName,
+        sf.ExcelColumnIndex,
+        mf.Name,
+        mf.DataType
+    FROM ImportSchema s
+    INNER JOIN ImportSchemaField sf
+        ON sf.ImportSchemaId = s.Id
+    INNER JOIN MetricField mf
+        ON mf.Id = sf.MetricFieldId
+    WHERE s.MetricId = @MetricId
+      AND s.Version = (
+          SELECT MAX(Version)
+          FROM ImportSchema
+          WHERE MetricId = @MetricId
+      )
+    ORDER BY sf.ExcelColumnIndex;
+END
+9. שליפת נתוני המדד עם Pagination
+CREATE PROCEDURE pr_GetMetricData
+    @MetricId INT,
+    @Page INT = 1,
+    @PageSize INT = 50
+AS
+BEGIN
+    DECLARE @Offset INT = (@Page - 1) * @PageSize;
+
+    SELECT
+        ir.Id AS RowId,
+        ir.RowNumber,
+        iv.MetricFieldId,
+        iv.Value
+    FROM ImportRow ir
+    INNER JOIN Import i
+        ON i.Id = ir.ImportId
+    INNER JOIN ImportValue iv
+        ON iv.ImportRowId = ir.Id
+    WHERE i.MetricId = @MetricId
+    ORDER BY ir.Id
+    OFFSET @Offset ROWS
+    FETCH NEXT @PageSize ROWS ONLY;
+END
+10. ספירת רשומות לצורך Pagination
+CREATE PROCEDURE pr_GetMetricDataCount
+    @MetricId INT
+AS
+BEGIN
+    SELECT COUNT(*) AS TotalCount
+    FROM ImportRow ir
+    INNER JOIN Import i
+        ON i.Id = ir.ImportId
+    WHERE i.MetricId = @MetricId;
+END
+
+5. תיאור הפתרון למידע דינמי
+
+המערכת נדרשת להתמודד עם נתונים המגיעים ממקורות בעלי מבנה משתנה, בעיקר קבצי Excel שבהם מספר העמודות, שמות העמודות וסוגי הנתונים עשויים להשתנות בין מדדים ובין גרסאות של אותו מדד.
+
+נבחר פתרון המבוסס על מודל Key/Value גנרי, המאפשר לשמור את הנתונים ללא יצירת טבלה חדשה או שינוי סכמת בסיס הנתונים בכל שינוי במבנה הקובץ.
+
+הפתרון מורכב מהשכבות הבאות:
+
+MetricField – מגדיר את השדות הקיימים עבור כל מדד, כולל שם השדה, סוג הנתון, האם הוא רלוונטי, האם הוא חובה וסדר התצוגה.
+ImportSchema – שומר את גרסת מבנה הקובץ שנקלט.
+ImportSchemaField – מקשר בין עמודת Excel לבין השדה המתאים במערכת.
+ImportRow – מייצג רשומה אחת מתוך קובץ הייבוא.
+ImportValue – שומר את הערך של שדה מסוים עבור הרשומה.
+
+לדוגמה, קובץ המכיל:
+
+ת"ז | שם עובד | מחלקה | סטטוס
+
+יישמר באופן גנרי כ־Rows ו־Values, כאשר שמות השדות והערכים אינם חלק ממבנה קבוע של טבלה.
+
+אם בעתיד הקובץ ישתנה ל:
+
+ת"ז | שם עובד | מחלקה | סטטוס | מנהל ישיר | מיקום
+
+המערכת מזהה את השדות החדשים, יוצרת בהתאם גרסת Schema חדשה, ומאפשרת לשמור את הנתונים החדשים ללא שינוי בטבלאות ה־DB וללא שינוי בקוד.
+
+יתרונות הפתרון
+אין צורך ליצור טבלה חדשה עבור כל Metric.
+אין צורך לבצע Migration כאשר מתווספות עמודות.
+ניתן להוסיף Metrics חדשים ללא שינוי במבנה ה־DB.
+נשמרת היסטוריית הייבואים וה־Schema של כל ייבוא.
+ניתן להציג את הנתונים באופן דינמי ב־Angular בהתאם ל־Metadata שהתקבל מהשרת.
+מאפשר סינון, מיון ו־Pagination גם כאשר מבנה הנתונים משתנה.
+
+הבחירה ב־Key/Value נותנת איזון בין גמישות לבין שמירה על מבנה רלציוני, בניגוד לפתרון JSON מלא, שבו הגמישות גבוהה יותר אך פעולות סינון, מיון ואינדוקס מורכבות יותר.
+
+6. חלופה לפיתרון -פחות רצוי... – שמירת כל רשומה כ-JSON
+
+כל שורה מקובץ ה-Excel תישמר כמסמך JSON אחד.
+
+יתרונות:
+
+פתרון פשוט וגמיש מאוד.
+אין צורך להגדיר מראש את העמודות.
+שינוי במבנה ה-Excel אינו דורש שינוי ב-Database.
+מתאים למידע שהמבנה שלו משתנה בתדירות גבוהה.
+
+חסרונות:
+
+קשה יותר לבצע שאילתות, סינון ומיון על שדות ספציפיים.
+קשה יותר לבצע אינדוקס ולקבל ביצועים טובים בכמויות מידע גדולות.
+ניהול טיפוסי נתונים פחות מובנה.
+פחות מתאים למידע שצריך להיות מוצג ומסונן באופן דינמי.
+
+
+7. 
+סקיצה של המסכים
+
+המערכת תוכננה סביב שלושה מסכים עיקריים:
+
+מסך 1 – ניהול שיטות פרמיה
+
+┌─────────────────────────────────────────────────────┐
+│              ניהול שיטות פרמיה                     │
+├─────────────────────────────────────────────────────┤
+│ מספר שיטה │ תיאור             │ % פרמיה │ תקופה    │
+├───────────┼───────────────────┼─────────┼───────────┤
+│ PM001     │ שיטת פרמיה עובדים │ 5%      │ חודשי    │
+│ PM002     │ ...               │ ...     │ ...      │
+├─────────────────────────────────────────────────────┤
+│              [+ הוספת שיטת פרמיה]                  │
+└─────────────────────────────────────────────────────┘
+
+מסך 2 – ניהול מדדים
+
+┌─────────────────────────────────────────────────────┐
+│                   ניהול מדדים                      │
+├─────────────────────────────────────────────────────┤
+│ מדד │ תיאור │ מקור │ שם מקור │ תדירות │ שיטת פרמיה │
+├─────┼────────┼──────┼──────────┼─────────┼────────────┤
+│ ... │ ...    │ Excel│ Workers │ חודשי   │ PM001      │
+├─────────────────────────────────────────────────────┤
+│                  [+ הוספת מדד]                     │
+└─────────────────────────────────────────────────────┘
+
+מסך 3 – קליטת וצפייה בנתוני מדד
+
+
+┌─────────────────────────────────────────────────────┐
+│                קליטת נתונים למדד                   │
+├─────────────────────────────────────────────────────┤
+│ בחירת מדד: [ נתוני עובדים ▼ ]                     │
+│                                                     │
+│ קובץ Excel: [בחירת קובץ]                           │
+│                                                     │
+│ [ קליטת קובץ ]                                     │
+├─────────────────────────────────────────────────────┤
+│                  נתוני המדד                        │
+├────────┬──────────┬──────────┬──────────┐
+│ ת"ז    │ שם עובד  │ מחלקה    │ סטטוס    │
+├────────┼──────────┼──────────┼──────────┤
+│ 123456 │ ישראל    │ כספים    │ פעיל     │
+│ 234567 │ דנה      │ מכירות   │ פעיל     │
+└────────┴──────────┴──────────┴──────────┘
+
+             < 1 2 3 4 5 > 
+
+העמודות בטבלת הנתונים אינן מקודדות ב-Angular, אלא נבנות באופן דינמי בהתאם לשדות שה-API מחזיר עבור המדד שנבחר.
+
+8. תכנון API
+
+ה-API יתבסס על POST בלבד, בהתאם לאופן המימוש שנבחר בפרויקט. כל הפעולות יקבלו את הפרמטרים הנדרשים ב-Request Body ויחזירו את תוצאת הפעולה ב-Response.
+
+Endpoint	מטרה
+POST /api/PremiumMethod/GetAll	קבלת כל שיטות הפרמיה
+POST /api/PremiumMethod/GetById	קבלת שיטת פרמיה לפי מזהה
+POST /api/PremiumMethod/Create	יצירת שיטת פרמיה
+POST /api/PremiumMethod/Update	עדכון שיטת פרמיה
+POST /api/PremiumMethod/Delete	מחיקת שיטת פרמיה
+POST /api/Metric/GetAll	קבלת כל המדדים
+POST /api/Metric/GetById	קבלת מדד לפי מזהה
+POST /api/Metric/Create	יצירת מדד
+POST /api/Metric/Update	עדכון מדד
+POST /api/Metric/Delete	מחיקת מדד
+POST /api/MetricField/GetByMetric	קבלת השדות המוגדרים עבור מדד
+POST /api/Import/Upload	העלאת וקליטת קובץ Excel
+POST /api/Import/GetHistory	קבלת היסטוריית הייבוא של מדד
+POST /api/Import/GetById	קבלת פרטי ייבוא
+POST /api/MetricData/Get	קבלת נתוני המדד
+POST /api/MetricData/GetFields	קבלת השדות הדינמיים להצגה
+POST /api/MetricData/GetFilters	קבלת אפשרויות הסינון
+
+עבור שליפת נתונים בכמות גדולה, ה-Request יכול להכיל פרמטרים כגון:
+
+{
+  "metricId": 1,
+  "page": 1,
+  "pageSize": 50,
+  "sortBy": "שם עובד",
+  "sortDirection": "asc",
+  "filters": {
+    "מחלקה": "כספים",
+    "סטטוס": "פעיל"
+  }
+}
+
+והתגובה תכלול את הנתונים ואת נתוני ה-Pagination:
+
+{
+  "items": [],
+  "page": 1,
+  "pageSize": 50,
+  "totalCount": 1250
+}
+
+כך כל הסינון, המיון וה-Pagination מתבצעים בצד השרת, ולא נדרש להעביר את כל הנתונים ל-Angular.
