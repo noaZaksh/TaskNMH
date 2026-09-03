@@ -1,0 +1,36 @@
+<div class="metric-data-page">
+  <h1>קליטת נתונים למדד</h1>
+
+  <section class="metric-selection">
+    <h2>בחירת מדד</h2>
+
+    <select (change)="onMetricChange($event)">
+      <option value="">בחרי מדד</option>
+
+      @for (metric of metrics; track metric.id) {
+      <option [value]="metric.id">{{ metric.name }}</option>
+      }
+    </select>
+  </section>
+
+  @if (selectedMetricId !== null) {
+
+  <section class="file-upload">
+    <h2>קליטת נתונים</h2>
+
+    <label for="excelFile">קובץ Excel:</label>
+
+    <input
+      id="excelFile"
+      type="file"
+      accept=".xlsx,.xls"
+      (change)="onFileSelected($event)"
+    />
+
+    <button type="button" (click)="uploadFile()" [disabled]="!selectedFile">
+      קליטת קובץ
+    </button>
+  </section>
+
+  }
+</div>

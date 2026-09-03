@@ -1,0 +1,15 @@
+<main>
+  <h1>ברוכים הבאים ל-TaskNMH</h1>
+
+  <p>דף נחיתה עם חיבור לשרת .NET</p>
+
+  <button (click)="getData()">קבל נתונים מהשרת</button>
+
+  @if (data) {
+  <h2>הנתונים שהתקבלו מהשרת:</h2>
+
+  <pre>{{ data | json }}</pre>
+  } @if (error) {
+  <p>{{ error }}</p>
+  }
+</main>
